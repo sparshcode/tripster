@@ -37,12 +37,3 @@ export type ExtractPayload = {
   images?: { mediaType: string; base64: string }[];
   pdf?: { base64: string };
 };
-
-export const BOOKING_ICON: Record<BookingType, string> = {
-  flight: "✈️",
-  hotel: "🏨",
-  activity: "🎟️",
-  restaurant: "🍣",
-  transport: "🚕",
-  other: "📌",
-};

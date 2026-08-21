@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AddToTrip } from "@/components/AddToTrip";
 import { ApiKeyPrompt } from "@/components/ApiKeyPrompt";
 import { AskTripBrain, type ChatTurn } from "@/components/AskTripBrain";
-import { ConflictsPanel } from "@/components/ConflictsPanel";
+import { BottomNav, type Tab } from "@/components/BottomNav";
 import { EmptyState } from "@/components/EmptyState";
-import { Timeline } from "@/components/Timeline";
-import { TripAtAGlance } from "@/components/TripAtAGlance";
+import { ItineraryPanel } from "@/components/ItineraryPanel";
+import { OverviewPanel } from "@/components/OverviewPanel";
+import { TripHero } from "@/components/TripHero";
 import { findConflicts, findGaps } from "@/lib/conflicts";
 import { clearTrip, loadTrip, newTrip, saveTrip } from "@/lib/trip-store";
 import type { Booking, ExtractPayload, Trip } from "@/lib/trip-types";
@@ -23,6 +24,7 @@ export default function Home() {
   const [pending, setPending] = useState<PendingAction>(null);
   const [chat, setChat] = useState<ChatTurn[]>([]);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<Tab>("overview");
 
   useEffect(() => {
     setTrip(loadTrip());
@@ -34,7 +36,10 @@ export default function Home() {
 
   const { conflicts, gaps } = useMemo(() => {
     if (!trip) return { conflicts: [], gaps: [] };
-    return { conflicts: findConflicts(trip.bookings), gaps: findGaps(trip.bookings) };
+    return {
+      conflicts: findConflicts(trip.bookings),
+      gaps: findGaps(trip.bookings),
+    };
   }, [trip]);
 
   const tripContext = useMemo(() => buildTripContext(trip), [trip]);
@@ -80,6 +85,7 @@ export default function Home() {
         createdAt: new Date().toISOString(),
       }));
       setTrip({ ...trip, bookings: [...trip.bookings, ...added] });
+      setTab("itinerary");
     } finally {
       setBusy(false);
     }
@@ -125,72 +131,64 @@ export default function Home() {
     if (p.kind === "ask") await runAsk(key, p.question);
   }
 
+  function clearAll() {
+    if (typeof window !== "undefined" && !window.confirm("Clear this trip and start over?")) return;
+    clearTrip();
+    setTrip(null);
+    setChat([]);
+    setApiKey("");
+    setTab("overview");
+  }
+
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <header className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-lg">
-              🧠
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-slate-900">Trip Brain</h1>
-              {trip ? (
-                <p className="text-xs text-slate-500">{trip.destination}</p>
-              ) : (
-                <p className="text-xs text-slate-500">One brain for your whole trip</p>
-              )}
-            </div>
-          </div>
-          {trip && (
-            <button
-              onClick={() => {
-                if (window.confirm("Clear this trip and start over?")) {
-                  clearTrip();
-                  setTrip(null);
-                  setChat([]);
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl sm:my-8 sm:min-h-[760px] sm:rounded-[36px] sm:border sm:border-white/60 sm:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.35)]">
+      {!trip ? (
+        <EmptyState onCreate={(d) => setTrip(newTrip(d))} />
+      ) : (
+        <>
+          <TripHero trip={trip} onClear={clearAll} />
+          <div className="flex-1 overflow-y-auto">
+            {tab === "overview" && (
+              <OverviewPanel
+                trip={trip}
+                conflicts={conflicts}
+                gaps={gaps}
+                onGoAdd={() => setTab("add")}
+              />
+            )}
+            {tab === "itinerary" && (
+              <ItineraryPanel
+                bookings={trip.bookings}
+                onRemove={(id) =>
+                  setTrip({
+                    ...trip,
+                    bookings: trip.bookings.filter((b) => b.id !== id),
+                  })
                 }
-              }}
-              className="rounded-full border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-white"
-            >
-              New trip
-            </button>
-          )}
-        </header>
-
-        {!trip && <EmptyState onCreate={(d) => setTrip(newTrip(d))} />}
-
-        {trip && (
-          <div className="space-y-5">
-            <ConflictsPanel conflicts={conflicts} gaps={gaps} />
-            <TripAtAGlance
-              trip={trip}
-              onRemove={(id) =>
-                setTrip({
-                  ...trip,
-                  bookings: trip.bookings.filter((b) => b.id !== id),
-                })
-              }
-            />
-            <Timeline bookings={trip.bookings} />
-            <AddToTrip
-              onExtract={async (payload) => {
-                const key = ensureKey({ kind: "extract", payload });
-                if (key) await runExtract(key, payload);
-              }}
-            />
-            <AskTripBrain
-              turns={chat}
-              busy={busy}
-              disabled={false}
-              onAsk={async (question) => {
-                const key = ensureKey({ kind: "ask", question });
-                if (key) await runAsk(key, question);
-              }}
-            />
+              />
+            )}
+            {tab === "ask" && (
+              <AskTripBrain
+                turns={chat}
+                busy={busy}
+                onAsk={async (question) => {
+                  const key = ensureKey({ kind: "ask", question });
+                  if (key) await runAsk(key, question);
+                }}
+              />
+            )}
+            {tab === "add" && (
+              <AddToTrip
+                onExtract={async (payload) => {
+                  const key = ensureKey({ kind: "extract", payload });
+                  if (key) await runExtract(key, payload);
+                }}
+              />
+            )}
           </div>
-        )}
-      </div>
+          <BottomNav current={tab} onChange={setTab} />
+        </>
+      )}
 
       <ApiKeyPrompt
         open={pending !== null}
@@ -205,8 +203,12 @@ function buildTripContext(trip: Trip | null): string {
   if (!trip) return "";
   const lines = [`Trip: ${trip.destination}`];
   const sorted = [...trip.bookings].sort((a, b) => {
-    const av = a.startDatetime ? new Date(a.startDatetime).getTime() : Infinity;
-    const bv = b.startDatetime ? new Date(b.startDatetime).getTime() : Infinity;
+    const av = a.startDatetime
+      ? new Date(a.startDatetime).getTime()
+      : Number.MAX_SAFE_INTEGER;
+    const bv = b.startDatetime
+      ? new Date(b.startDatetime).getTime()
+      : Number.MAX_SAFE_INTEGER;
     return av - bv;
   });
   for (const b of sorted) {

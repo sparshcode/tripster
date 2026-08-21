@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Send, Sparkles } from "lucide-react";
+import clsx from "clsx";
 
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 
@@ -9,20 +10,27 @@ const SUGGESTIONS = [
   "What am I doing tomorrow?",
   "Have I booked airport transport?",
   "Which bookings can I cancel?",
+  "How much free time on Oct 13?",
 ];
 
 export function AskTripBrain({
   turns,
   onAsk,
-  disabled,
   busy,
 }: {
   turns: ChatTurn[];
   onAsk: (question: string) => Promise<void>;
-  disabled: boolean;
   busy: boolean;
 }) {
   const [q, setQ] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [turns.length]);
 
   async function send(question: string) {
     if (!question.trim() || busy) return;
@@ -31,41 +39,64 @@ export function AskTripBrain({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="text-sm font-semibold text-slate-900">Ask Trip Brain</div>
-      <p className="mt-1 text-xs text-slate-500">
-        Answers use only the bookings you have added.
-      </p>
+    <div className="flex h-full flex-col px-5 pb-5 pt-5">
+      <div className="flex items-center gap-2">
+        <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-slate-900">Ask Trip Brain</div>
+          <div className="text-[11px] text-slate-500">
+            Answers only from bookings you&apos;ve added.
+          </div>
+        </div>
+      </div>
 
-      {turns.length === 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+      {turns.length === 0 ? (
+        <div className="mt-6 space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+            Try asking
+          </div>
           {SUGGESTIONS.map((s) => (
             <button
               key={s}
+              type="button"
               onClick={() => send(s)}
-              disabled={disabled || busy}
-              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={busy}
+              className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {s}
+              <span>{s}</span>
+              <Send className="h-3.5 w-3.5 text-slate-400" />
             </button>
           ))}
         </div>
-      )}
-
-      {turns.length > 0 && (
-        <div className="mt-3 max-h-72 space-y-3 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm">
+      ) : (
+        <div
+          ref={scrollRef}
+          className="mt-4 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50 p-3"
+        >
           {turns.map((t, i) => (
-            <div key={i} className={t.role === "user" ? "text-slate-700" : "text-slate-900"}>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-                {t.role === "user" ? "You" : "Trip Brain"}
-              </div>
+            <div
+              key={i}
+              className={clsx(
+                "max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm",
+                t.role === "user"
+                  ? "ml-auto bg-slate-900 text-white"
+                  : "mr-auto bg-white text-slate-800"
+              )}
+            >
               <div className="whitespace-pre-wrap">{t.content}</div>
             </div>
           ))}
+          {busy && (
+            <div className="mr-auto flex max-w-[85%] items-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs text-slate-500 shadow-sm">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+            </div>
+          )}
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-4 flex items-center gap-2">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -73,17 +104,22 @@ export function AskTripBrain({
             if (e.key === "Enter") send(q);
           }}
           placeholder="Ask about your trip…"
-          disabled={disabled}
-          className="flex-1 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500"
         />
         <button
+          type="button"
           onClick={() => send(q)}
-          disabled={disabled || busy || !q.trim()}
-          className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={busy || !q.trim()}
+          className="grid h-10 w-10 place-items-center rounded-full bg-slate-900 text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Send"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Ask
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
         </button>
       </div>
-    </section>
+    </div>
   );
 }

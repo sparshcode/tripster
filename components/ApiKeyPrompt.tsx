@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { KeyRound, ShieldCheck } from "lucide-react";
 
 export function ApiKeyPrompt({
   open,
@@ -23,55 +24,64 @@ export function ApiKeyPrompt({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="api-key-title"
     >
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-        <h3 id="api-key-title" className="text-lg font-semibold text-slate-900">
-          Enter your Anthropic API key
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Trip Brain calls Claude with your key. It stays in this browser tab, is sent over
-          HTTPS, and is never stored by the app.
-        </p>
-        <label className="mt-5 block text-sm font-medium text-slate-700" htmlFor="key">
-          API key
-        </label>
-        <input
-          id="key"
-          type="password"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") submit();
-          }}
-          autoComplete="off"
-          autoFocus
-          spellCheck={false}
-          placeholder="sk-ant-..."
-          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500"
-        />
-        <div className="mt-5 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setKey("");
-              onCancel();
-            }}
-            className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!key.trim()}
-            className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Continue
-          </button>
+      <div className="w-full max-w-sm overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl">
+        <div className="bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-rose-500 px-6 py-5 text-white">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+            <ShieldCheck className="h-3.5 w-3.5" /> Bring-your-own-key
+          </div>
+          <h3 id="api-key-title" className="mt-2 text-lg font-semibold">
+            Enter your Anthropic API key
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-white/85">
+            Kept in this browser tab only. Sent over HTTPS to Claude. Never stored by Trip Brain.
+          </p>
+        </div>
+        <div className="p-6">
+          <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500" htmlFor="key">
+            API key
+          </label>
+          <div className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 focus-within:border-indigo-500 focus-within:bg-white">
+            <KeyRound className="h-4 w-4 text-slate-400" />
+            <input
+              id="key"
+              type="password"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submit();
+              }}
+              autoComplete="off"
+              autoFocus
+              spellCheck={false}
+              placeholder="sk-ant-..."
+              className="w-full bg-transparent text-sm text-slate-900 outline-none"
+            />
+          </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setKey("");
+                onCancel();
+              }}
+              className="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!key.trim()}
+              className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Continue
+            </button>
+          </div>
         </div>
       </div>
     </div>
