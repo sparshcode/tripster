@@ -25,8 +25,12 @@ function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Hotels represent residence, not scheduled events, so they never conflict with activities inside their span.
+const RESIDENCE_TYPES: ReadonlySet<Booking["type"]> = new Set(["hotel"]);
+
 export function findConflicts(bookings: Booking[]): Conflict[] {
   const timed = bookings
+    .filter((b) => !RESIDENCE_TYPES.has(b.type))
     .map((b) => ({
       b,
       start: toDate(b.startDatetime),
