@@ -50,7 +50,7 @@ export function TripHero({
   const label = tripDateRangeLabel(trip);
 
   return (
-    <header className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-fuchsia-600 to-rose-500 px-6 pb-8 pt-6 text-white sm:pt-12">
+    <header className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-fuchsia-600 to-rose-500 px-6 pb-8 pt-12 text-white">
       <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/15 blur-3xl" />
       <div className="pointer-events-none absolute -left-20 bottom-0 h-52 w-52 rounded-full bg-black/10 blur-2xl" />
 
