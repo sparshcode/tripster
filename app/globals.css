@@ -5,11 +5,7 @@
 html,
 body {
   min-height: 100%;
-  background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(129, 140, 248, 0.35), transparent 60%),
-    radial-gradient(900px 500px at 100% 10%, rgba(244, 114, 182, 0.30), transparent 55%),
-    radial-gradient(700px 500px at 60% 100%, rgba(251, 191, 36, 0.20), transparent 60%),
-    #f5f3ff;
+  background: #05060f;
   color: #0f172a;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }

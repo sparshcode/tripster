@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, LogOut, Sparkles } from "lucide-react";
+import { TripsterLogo } from "./TripsterLogo";
 
 const SUGGESTIONS = [
   "Tokyo — Oct 12–19",
@@ -11,8 +12,10 @@ const SUGGESTIONS = [
 
 export function EmptyState({
   onCreate,
+  onSignOut,
 }: {
   onCreate: (destination: string) => void;
+  onSignOut?: () => void;
 }) {
   const [value, setValue] = useState("");
 
@@ -24,10 +27,17 @@ export function EmptyState({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center px-6 pb-10 pt-12 text-center">
-      <div className="grid h-24 w-24 place-items-center rounded-3xl bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-rose-500 text-4xl shadow-xl shadow-indigo-500/30">
-        🧠
-      </div>
+    <div className="relative flex flex-1 flex-col items-center px-6 pb-10 pt-16 text-center">
+      {onSignOut && (
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="absolute right-4 top-4 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-50"
+        >
+          <LogOut className="h-3 w-3" /> Sign out
+        </button>
+      )}
+      <TripsterLogo size={96} className="drop-shadow-xl" />
       <div className="mt-6 inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-indigo-600">
         <Sparkles className="h-3 w-3" /> Tripster
       </div>

@@ -7,8 +7,17 @@ import { AskTripster, type ChatTurn } from "@/components/AskTripster";
 import { BottomNav, type Tab } from "@/components/BottomNav";
 import { EmptyState } from "@/components/EmptyState";
 import { ItineraryPanel } from "@/components/ItineraryPanel";
+import { Onboarding } from "@/components/Onboarding";
 import { OverviewPanel } from "@/components/OverviewPanel";
+import { PhoneFrame } from "@/components/PhoneFrame";
 import { TripHero } from "@/components/TripHero";
+import {
+  clearAuth,
+  loadAuth,
+  saveAuth,
+  type AuthMethod,
+  type AuthState,
+} from "@/lib/auth-store";
 import { findConflicts, findGaps } from "@/lib/conflicts";
 import { clearTrip, loadTrip, newTrip, saveTrip } from "@/lib/trip-store";
 import type { Booking, ExtractPayload, Trip } from "@/lib/trip-types";
@@ -19,6 +28,8 @@ type PendingAction =
   | null;
 
 export default function Home() {
+  const [hydrated, setHydrated] = useState(false);
+  const [auth, setAuth] = useState<AuthState | null>(null);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [pending, setPending] = useState<PendingAction>(null);
@@ -27,7 +38,9 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("overview");
 
   useEffect(() => {
+    setAuth(loadAuth());
     setTrip(loadTrip());
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
@@ -140,13 +153,38 @@ export default function Home() {
     setTab("overview");
   }
 
+  function handleSignIn(info: { method: AuthMethod; email?: string }) {
+    const a: AuthState = {
+      email: info.email ?? null,
+      method: info.method,
+      signedInAt: new Date().toISOString(),
+    };
+    saveAuth(a);
+    setAuth(a);
+  }
+
+  function handleSignOut() {
+    if (typeof window !== "undefined" && !window.confirm("Sign out of Tripster?")) return;
+    clearAuth();
+    setAuth(null);
+    setTrip(null);
+    setChat([]);
+    setApiKey("");
+    setTab("overview");
+  }
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl sm:my-8 sm:min-h-[760px] sm:rounded-[36px] sm:border sm:border-white/60 sm:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.35)]">
-      {!trip ? (
-        <EmptyState onCreate={(d) => setTrip(newTrip(d))} />
+    <PhoneFrame>
+      {!hydrated ? null : !auth ? (
+        <Onboarding onSignIn={handleSignIn} />
+      ) : !trip ? (
+        <EmptyState
+          onCreate={(d) => setTrip(newTrip(d))}
+          onSignOut={handleSignOut}
+        />
       ) : (
         <>
-          <TripHero trip={trip} onClear={clearAll} />
+          <TripHero trip={trip} onClear={clearAll} onSignOut={handleSignOut} />
           <div className="flex-1 overflow-y-auto">
             {tab === "overview" && (
               <OverviewPanel
@@ -195,7 +233,7 @@ export default function Home() {
         onCancel={() => setPending(null)}
         onSubmit={handleKey}
       />
-    </main>
+    </PhoneFrame>
   );
 }
 

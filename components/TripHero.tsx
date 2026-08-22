@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Pencil, Sparkles } from "lucide-react";
+import { LogOut, Pencil, Sparkles } from "lucide-react";
 import type { Trip } from "@/lib/trip-types";
 import {
   formatDateChip,
@@ -39,16 +39,18 @@ function tripDateRangeLabel(trip: Trip): string {
 export function TripHero({
   trip,
   onClear,
+  onSignOut,
 }: {
   trip: Trip;
   onClear: () => void;
+  onSignOut?: () => void;
 }) {
   const days = tripSpanDays(trip);
   const today = new Date();
   const label = tripDateRangeLabel(trip);
 
   return (
-    <header className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-fuchsia-600 to-rose-500 px-6 pb-8 pt-6 text-white">
+    <header className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-fuchsia-600 to-rose-500 px-6 pb-8 pt-6 text-white sm:pt-12">
       <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/15 blur-3xl" />
       <div className="pointer-events-none absolute -left-20 bottom-0 h-52 w-52 rounded-full bg-black/10 blur-2xl" />
 
@@ -56,13 +58,25 @@ export function TripHero({
         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/80">
           <Sparkles className="h-3.5 w-3.5" /> Tripster
         </div>
-        <button
-          type="button"
-          onClick={onClear}
-          className="flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
-        >
-          <Pencil className="h-3 w-3" /> New trip
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onSignOut && (
+            <button
+              type="button"
+              onClick={onSignOut}
+              aria-label="Sign out"
+              className="grid h-7 w-7 place-items-center rounded-full border border-white/25 bg-white/10 text-white hover:bg-white/20"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClear}
+            className="flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
+          >
+            <Pencil className="h-3 w-3" /> New trip
+          </button>
+        </div>
       </div>
 
       <h1 className="relative mt-4 text-2xl font-bold leading-tight tracking-tight">
