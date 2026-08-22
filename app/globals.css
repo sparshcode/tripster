@@ -10,6 +10,14 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+.phone-backdrop {
+  background:
+    radial-gradient(ellipse 800px 500px at 20% -10%, rgba(99, 102, 241, 0.35), transparent 60%),
+    radial-gradient(ellipse 700px 400px at 100% 110%, rgba(244, 63, 94, 0.25), transparent 60%),
+    radial-gradient(ellipse 600px 400px at 50% 50%, rgba(217, 70, 239, 0.10), transparent 65%),
+    #05060f;
+}
+
 .no-scrollbar {
   scrollbar-width: none;
 }
