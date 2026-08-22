@@ -5,8 +5,8 @@ import { AddToTrip } from "@/components/AddToTrip";
 import { ApiKeyPrompt } from "@/components/ApiKeyPrompt";
 import { AskTripster, type ChatTurn } from "@/components/AskTripster";
 import { BottomNav, type Tab } from "@/components/BottomNav";
+import { CreateTripPage } from "@/components/CreateTripPage";
 import { ItineraryPanel } from "@/components/ItineraryPanel";
-import { NewTripModal } from "@/components/NewTripModal";
 import { Onboarding } from "@/components/Onboarding";
 import { OverviewPanel } from "@/components/OverviewPanel";
 import { PhoneFrame } from "@/components/PhoneFrame";
@@ -25,6 +25,7 @@ import type { Booking, ExtractPayload, Trip } from "@/lib/trip-types";
 
 type PendingAction =
   | { kind: "extract"; payload: ExtractPayload }
+  | { kind: "extractBatch"; payloads: ExtractPayload[] }
   | { kind: "ask"; question: string }
   | null;
 
@@ -33,7 +34,7 @@ export default function Home() {
   const [auth, setAuth] = useState<AuthState | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [activeTripId, setActiveTripId] = useState<string | null>(null);
-  const [showNewTrip, setShowNewTrip] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   const [apiKey, setApiKey] = useState("");
   const [pending, setPending] = useState<PendingAction>(null);
@@ -78,8 +79,34 @@ export default function Home() {
     setTrips((prev) => prev.map((t) => (t.id === next.id ? next : t)));
   }
 
-  async function runExtract(key: string, payload: ExtractPayload) {
-    if (!activeTrip) return;
+  function addExtractedBookings(tripId: string, raws: Partial<Booking>[]) {
+    const added: Booking[] = raws.map((raw) => ({
+      id: crypto.randomUUID(),
+      type: (raw.type as Booking["type"]) ?? "other",
+      title: raw.title ?? "Untitled booking",
+      provider: raw.provider ?? undefined,
+      confirmationNumber: raw.confirmationNumber ?? undefined,
+      startDatetime: raw.startDatetime ?? undefined,
+      endDatetime: raw.endDatetime ?? undefined,
+      location: raw.location ?? undefined,
+      address: raw.address ?? undefined,
+      cancellationPolicy: raw.cancellationPolicy ?? undefined,
+      paymentStatus: raw.paymentStatus ?? undefined,
+      people: raw.people ?? undefined,
+      actionsRequired: raw.actionsRequired ?? undefined,
+      notes: raw.notes ?? undefined,
+      createdAt: new Date().toISOString(),
+    }));
+    setTrips((prev) =>
+      prev.map((t) =>
+        t.id === tripId ? { ...t, bookings: [...t.bookings, ...added] } : t
+      )
+    );
+  }
+
+  async function runExtract(key: string, payload: ExtractPayload, tripId?: string) {
+    const targetId = tripId ?? activeTripId;
+    if (!targetId) return;
     setBusy(true);
     try {
       const res = await fetch("/api/extract", {
@@ -95,28 +122,21 @@ export default function Home() {
         error?: string;
       };
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      const added: Booking[] = (data.bookings ?? []).map((raw) => ({
-        id: crypto.randomUUID(),
-        type: (raw.type as Booking["type"]) ?? "other",
-        title: raw.title ?? "Untitled booking",
-        provider: raw.provider ?? undefined,
-        confirmationNumber: raw.confirmationNumber ?? undefined,
-        startDatetime: raw.startDatetime ?? undefined,
-        endDatetime: raw.endDatetime ?? undefined,
-        location: raw.location ?? undefined,
-        address: raw.address ?? undefined,
-        cancellationPolicy: raw.cancellationPolicy ?? undefined,
-        paymentStatus: raw.paymentStatus ?? undefined,
-        people: raw.people ?? undefined,
-        actionsRequired: raw.actionsRequired ?? undefined,
-        notes: raw.notes ?? undefined,
-        createdAt: new Date().toISOString(),
-      }));
-      updateActiveTrip((t) => ({ ...t, bookings: [...t.bookings, ...added] }));
-      setTab("itinerary");
+      addExtractedBookings(targetId, data.bookings ?? []);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function runExtractBatch(key: string, payloads: ExtractPayload[], tripId?: string) {
+    for (const payload of payloads) {
+      try {
+        await runExtract(key, payload, tripId);
+      } catch {
+        /* keep going through the batch */
+      }
+    }
+    setTab("itinerary");
   }
 
   async function runAsk(key: string, question: string) {
@@ -156,6 +176,7 @@ export default function Home() {
     setPending(null);
     if (!p) return;
     if (p.kind === "extract") await runExtract(key, p.payload);
+    if (p.kind === "extractBatch") await runExtractBatch(key, p.payloads);
     if (p.kind === "ask") await runAsk(key, p.question);
   }
 
@@ -174,17 +195,29 @@ export default function Home() {
     clearAuth();
     setAuth(null);
     setActiveTripId(null);
+    setShowCreate(false);
     setChat([]);
     setApiKey("");
     setTab("overview");
   }
 
-  function handleCreateTrip(destination: string) {
-    const trip = newTrip(destination);
+  function handleCreateTrip(input: {
+    destination: string;
+    attachments: ExtractPayload[];
+  }) {
+    const trip = newTrip(input.destination);
     setTrips((prev) => [...prev, trip]);
     setActiveTripId(trip.id);
-    setShowNewTrip(false);
+    setShowCreate(false);
     setTab("overview");
+    setChat([]);
+
+    if (input.attachments.length === 0) return;
+    if (apiKey) {
+      runExtractBatch(apiKey, input.attachments, trip.id);
+    } else {
+      setPending({ kind: "extractBatch", payloads: input.attachments });
+    }
   }
 
   function handleDeleteTrip(id: string) {
@@ -205,6 +238,11 @@ export default function Home() {
     <PhoneFrame>
       {!hydrated ? null : !auth ? (
         <Onboarding onSignIn={handleSignIn} />
+      ) : showCreate ? (
+        <CreateTripPage
+          onBack={() => setShowCreate(false)}
+          onCreate={handleCreateTrip}
+        />
       ) : !activeTrip ? (
         <TripsHome
           trips={trips}
@@ -214,7 +252,7 @@ export default function Home() {
             setTab("overview");
             setChat([]);
           }}
-          onCreateTrip={() => setShowNewTrip(true)}
+          onCreateTrip={() => setShowCreate(true)}
           onDeleteTrip={handleDeleteTrip}
           onSignOut={handleSignOut}
         />
@@ -270,12 +308,6 @@ export default function Home() {
           <BottomNav current={tab} onChange={setTab} />
         </>
       )}
-
-      <NewTripModal
-        open={showNewTrip}
-        onCancel={() => setShowNewTrip(false)}
-        onCreate={handleCreateTrip}
-      />
 
       <ApiKeyPrompt
         open={pending !== null}
