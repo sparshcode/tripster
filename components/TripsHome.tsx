@@ -297,9 +297,12 @@ function ActiveCard({
             src={photo}
             alt={name}
             fill
-            sizes="380px"
+            sizes="400px"
             className="object-cover"
             loading="lazy"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-5">
@@ -354,9 +357,12 @@ function MiniCard({
             src={photo}
             alt={name}
             fill
-            sizes="180px"
+            sizes="200px"
             className={clsx("object-cover", muted && "grayscale-[15%]")}
             loading="lazy"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-3">
