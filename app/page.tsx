@@ -5,12 +5,13 @@ import { AddToTrip } from "@/components/AddToTrip";
 import { ApiKeyPrompt } from "@/components/ApiKeyPrompt";
 import { AskTripster, type ChatTurn } from "@/components/AskTripster";
 import { BottomNav, type Tab } from "@/components/BottomNav";
-import { EmptyState } from "@/components/EmptyState";
 import { ItineraryPanel } from "@/components/ItineraryPanel";
+import { NewTripModal } from "@/components/NewTripModal";
 import { Onboarding } from "@/components/Onboarding";
 import { OverviewPanel } from "@/components/OverviewPanel";
 import { PhoneFrame } from "@/components/PhoneFrame";
 import { TripHero } from "@/components/TripHero";
+import { TripsHome } from "@/components/TripsHome";
 import {
   clearAuth,
   loadAuth,
@@ -19,7 +20,7 @@ import {
   type AuthState,
 } from "@/lib/auth-store";
 import { findConflicts, findGaps } from "@/lib/conflicts";
-import { clearTrip, loadTrip, newTrip, saveTrip } from "@/lib/trip-store";
+import { loadTrips, newTrip, saveTrips } from "@/lib/trip-store";
 import type { Booking, ExtractPayload, Trip } from "@/lib/trip-types";
 
 type PendingAction =
@@ -30,7 +31,10 @@ type PendingAction =
 export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [auth, setAuth] = useState<AuthState | null>(null);
-  const [trip, setTrip] = useState<Trip | null>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [activeTripId, setActiveTripId] = useState<string | null>(null);
+  const [showNewTrip, setShowNewTrip] = useState(false);
+
   const [apiKey, setApiKey] = useState("");
   const [pending, setPending] = useState<PendingAction>(null);
   const [chat, setChat] = useState<ChatTurn[]>([]);
@@ -39,23 +43,28 @@ export default function Home() {
 
   useEffect(() => {
     setAuth(loadAuth());
-    setTrip(loadTrip());
+    setTrips(loadTrips());
     setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (trip) saveTrip(trip);
-  }, [trip]);
+    if (hydrated) saveTrips(trips);
+  }, [trips, hydrated]);
+
+  const activeTrip = useMemo(
+    () => trips.find((t) => t.id === activeTripId) ?? null,
+    [trips, activeTripId]
+  );
 
   const { conflicts, gaps } = useMemo(() => {
-    if (!trip) return { conflicts: [], gaps: [] };
+    if (!activeTrip) return { conflicts: [], gaps: [] };
     return {
-      conflicts: findConflicts(trip.bookings),
-      gaps: findGaps(trip.bookings),
+      conflicts: findConflicts(activeTrip.bookings),
+      gaps: findGaps(activeTrip.bookings),
     };
-  }, [trip]);
+  }, [activeTrip]);
 
-  const tripContext = useMemo(() => buildTripContext(trip), [trip]);
+  const tripContext = useMemo(() => buildTripContext(activeTrip), [activeTrip]);
 
   function ensureKey(action: PendingAction): string | null {
     if (apiKey) return apiKey;
@@ -63,8 +72,14 @@ export default function Home() {
     return null;
   }
 
+  function updateActiveTrip(update: (t: Trip) => Trip) {
+    if (!activeTrip) return;
+    const next = update(activeTrip);
+    setTrips((prev) => prev.map((t) => (t.id === next.id ? next : t)));
+  }
+
   async function runExtract(key: string, payload: ExtractPayload) {
-    if (!trip) return;
+    if (!activeTrip) return;
     setBusy(true);
     try {
       const res = await fetch("/api/extract", {
@@ -97,7 +112,7 @@ export default function Home() {
         notes: raw.notes ?? undefined,
         createdAt: new Date().toISOString(),
       }));
-      setTrip({ ...trip, bookings: [...trip.bookings, ...added] });
+      updateActiveTrip((t) => ({ ...t, bookings: [...t.bookings, ...added] }));
       setTab("itinerary");
     } finally {
       setBusy(false);
@@ -144,15 +159,6 @@ export default function Home() {
     if (p.kind === "ask") await runAsk(key, p.question);
   }
 
-  function clearAll() {
-    if (typeof window !== "undefined" && !window.confirm("Clear this trip and start over?")) return;
-    clearTrip();
-    setTrip(null);
-    setChat([]);
-    setApiKey("");
-    setTab("overview");
-  }
-
   function handleSignIn(info: { method: AuthMethod; email?: string }) {
     const a: AuthState = {
       email: info.email ?? null,
@@ -167,9 +173,31 @@ export default function Home() {
     if (typeof window !== "undefined" && !window.confirm("Sign out of Tripster?")) return;
     clearAuth();
     setAuth(null);
-    setTrip(null);
+    setActiveTripId(null);
     setChat([]);
     setApiKey("");
+    setTab("overview");
+  }
+
+  function handleCreateTrip(destination: string) {
+    const trip = newTrip(destination);
+    setTrips((prev) => [...prev, trip]);
+    setActiveTripId(trip.id);
+    setShowNewTrip(false);
+    setTab("overview");
+  }
+
+  function handleDeleteTrip(id: string) {
+    setTrips((prev) => prev.filter((t) => t.id !== id));
+    if (activeTripId === id) {
+      setActiveTripId(null);
+      setChat([]);
+    }
+  }
+
+  function handleBackToHome() {
+    setActiveTripId(null);
+    setChat([]);
     setTab("overview");
   }
 
@@ -177,18 +205,33 @@ export default function Home() {
     <PhoneFrame>
       {!hydrated ? null : !auth ? (
         <Onboarding onSignIn={handleSignIn} />
-      ) : !trip ? (
-        <EmptyState
-          onCreate={(d) => setTrip(newTrip(d))}
+      ) : !activeTrip ? (
+        <TripsHome
+          trips={trips}
+          auth={auth}
+          onOpenTrip={(id) => {
+            setActiveTripId(id);
+            setTab("overview");
+            setChat([]);
+          }}
+          onCreateTrip={() => setShowNewTrip(true)}
+          onDeleteTrip={handleDeleteTrip}
           onSignOut={handleSignOut}
         />
       ) : (
         <>
-          <TripHero trip={trip} onClear={clearAll} onSignOut={handleSignOut} />
+          <TripHero
+            trip={activeTrip}
+            onBack={handleBackToHome}
+            onDelete={() => {
+              if (typeof window !== "undefined" && !window.confirm(`Delete ${activeTrip.destination}?`)) return;
+              handleDeleteTrip(activeTrip.id);
+            }}
+          />
           <div className="flex-1 overflow-y-auto">
             {tab === "overview" && (
               <OverviewPanel
-                trip={trip}
+                trip={activeTrip}
                 conflicts={conflicts}
                 gaps={gaps}
                 onGoAdd={() => setTab("add")}
@@ -196,12 +239,12 @@ export default function Home() {
             )}
             {tab === "itinerary" && (
               <ItineraryPanel
-                bookings={trip.bookings}
+                bookings={activeTrip.bookings}
                 onRemove={(id) =>
-                  setTrip({
-                    ...trip,
-                    bookings: trip.bookings.filter((b) => b.id !== id),
-                  })
+                  updateActiveTrip((t) => ({
+                    ...t,
+                    bookings: t.bookings.filter((b) => b.id !== id),
+                  }))
                 }
               />
             )}
@@ -227,6 +270,12 @@ export default function Home() {
           <BottomNav current={tab} onChange={setTab} />
         </>
       )}
+
+      <NewTripModal
+        open={showNewTrip}
+        onCancel={() => setShowNewTrip(false)}
+        onCreate={handleCreateTrip}
+      />
 
       <ApiKeyPrompt
         open={pending !== null}

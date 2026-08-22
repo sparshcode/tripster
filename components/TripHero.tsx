@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { LogOut, Pencil, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, Trash2 } from "lucide-react";
 import type { Trip } from "@/lib/trip-types";
 import {
   formatDateChip,
@@ -38,12 +38,12 @@ function tripDateRangeLabel(trip: Trip): string {
 
 export function TripHero({
   trip,
-  onClear,
-  onSignOut,
+  onBack,
+  onDelete,
 }: {
   trip: Trip;
-  onClear: () => void;
-  onSignOut?: () => void;
+  onBack: () => void;
+  onDelete: () => void;
 }) {
   const days = tripSpanDays(trip);
   const today = new Date();
@@ -55,26 +55,24 @@ export function TripHero({
       <div className="pointer-events-none absolute -left-20 bottom-0 h-52 w-52 rounded-full bg-black/10 blur-2xl" />
 
       <div className="relative flex items-start justify-between">
-        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/80">
-          <Sparkles className="h-3.5 w-3.5" /> Tripster
-        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> All trips
+        </button>
         <div className="flex items-center gap-1.5">
-          {onSignOut && (
-            <button
-              type="button"
-              onClick={onSignOut}
-              aria-label="Sign out"
-              className="grid h-7 w-7 place-items-center rounded-full border border-white/25 bg-white/10 text-white hover:bg-white/20"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
-          )}
+          <div className="flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white">
+            <Sparkles className="h-3 w-3" /> Tripster
+          </div>
           <button
             type="button"
-            onClick={onClear}
-            className="flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
+            onClick={onDelete}
+            aria-label="Delete trip"
+            className="grid h-7 w-7 place-items-center rounded-full border border-white/25 bg-white/10 text-white hover:bg-white/20"
           >
-            <Pencil className="h-3 w-3" /> New trip
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
