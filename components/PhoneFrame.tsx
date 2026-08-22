@@ -2,15 +2,20 @@
 
 import type { ReactNode } from "react";
 
-// A rounded iPhone-style bezel that scales down gracefully on small viewports.
+// iPhone-shaped bezel: tall 9:19.5 aspect, visible dynamic island and home indicator.
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="phone-backdrop flex min-h-screen items-center justify-center p-3 sm:p-8">
-      <div className="relative w-full max-w-md rounded-[52px] bg-slate-800 p-3 shadow-2xl shadow-indigo-500/30 ring-2 ring-slate-700/80">
-        <main className="relative flex min-h-[720px] w-full flex-col overflow-hidden rounded-[40px] bg-white shadow-inner ring-1 ring-black/10 sm:min-h-[820px]">
-          <div className="pointer-events-none absolute left-1/2 top-2.5 z-50 h-6 w-28 -translate-x-1/2 rounded-full bg-slate-900" />
+    <div className="phone-backdrop flex min-h-screen items-center justify-center p-4">
+      <div className="relative w-full max-w-[380px] rounded-[54px] bg-slate-950 p-[14px] shadow-2xl shadow-indigo-500/40 ring-1 ring-slate-800">
+        <div className="pointer-events-none absolute -left-[3px] top-24 h-14 w-[3px] rounded-l-full bg-slate-800" />
+        <div className="pointer-events-none absolute -left-[3px] top-44 h-20 w-[3px] rounded-l-full bg-slate-800" />
+        <div className="pointer-events-none absolute -right-[3px] top-32 h-24 w-[3px] rounded-r-full bg-slate-800" />
+        <main className="relative flex h-[780px] w-full flex-col overflow-hidden rounded-[42px] bg-white">
+          <div className="pointer-events-none absolute left-1/2 top-3 z-50 flex h-7 w-32 -translate-x-1/2 items-center justify-end gap-1.5 rounded-full bg-slate-950 pr-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-700" />
+          </div>
           {children}
-          <div className="pointer-events-none absolute inset-x-0 bottom-2 z-50 mx-auto h-1 w-24 rounded-full bg-slate-900/40" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-2 z-50 mx-auto h-1 w-32 rounded-full bg-slate-900/60" />
         </main>
       </div>
     </div>
