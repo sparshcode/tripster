@@ -2,6 +2,8 @@
 
 > Your trip information is scattered across 10 places. Tripster turns it into one context-aware travel assistant that knows what you've booked, what you planned, and what you still need to do.
 
+**[Try the live demo](https://tripster-plum.vercel.app)**
+
 Built with **Next.js 15** + **Anthropic Claude** (bring-your-own-key) + browser storage.
 
 ## What V0 does
