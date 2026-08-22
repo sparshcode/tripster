@@ -42,7 +42,7 @@ export function Onboarding({
   }
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-y-auto bg-white px-6 pb-8 pt-14">
+    <div className="no-scrollbar relative flex flex-1 flex-col overflow-y-auto bg-white px-6 pb-8 pt-14">
       <div className="flex flex-col items-center">
         <TripsterLogo size={64} className="drop-shadow-lg" />
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">

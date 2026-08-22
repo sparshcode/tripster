@@ -94,7 +94,7 @@ export function TripsHome({
 
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden bg-white">
-      <div className="flex-1 overflow-y-auto pb-28 pt-14">
+      <div className="no-scrollbar flex-1 overflow-y-auto pb-28 pt-14">
         <header className="flex items-center justify-between px-6 pt-2">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900">Trips</h1>
           <button
