@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import clsx from "clsx";
 import { Search, Trash2 } from "lucide-react";
 import { BOOKING_STYLE } from "@/lib/booking-style";
 import type { Booking } from "@/lib/trip-types";
@@ -11,6 +12,16 @@ import {
   wallTime,
 } from "@/lib/format";
 
+function dayChipLabel(dayKey: string): { weekday: string; day: string } {
+  const m = dayKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return { weekday: "—", day: "—" };
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return {
+    weekday: d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase(),
+    day: String(d.getDate()),
+  };
+}
+
 export function ItineraryPanel({
   bookings,
   onRemove,
@@ -19,7 +30,9 @@ export function ItineraryPanel({
   onRemove: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const today = todayDayKey();
+  const dayRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const days = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -55,6 +68,12 @@ export function ItineraryPanel({
       .sort((a, b) => a.day.localeCompare(b.day));
   }, [bookings, query]);
 
+  function jumpToDay(day: string) {
+    setSelectedDay(day);
+    const el = dayRefs.current[day];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   if (bookings.length === 0) {
     return (
       <div className="px-5 py-6">
@@ -65,8 +84,50 @@ export function ItineraryPanel({
     );
   }
 
+  const activeChip = selectedDay ?? (days.some((d) => d.day === today) ? today : days[0]?.day);
+
   return (
     <div className="px-5 py-5">
+      {days.length > 1 && (
+        <div className="no-scrollbar -mx-5 mb-3 overflow-x-auto px-5">
+          <ul className="flex gap-2 pb-1">
+            {days.map(({ day }) => {
+              const isActive = day === activeChip;
+              const isToday = day === today;
+              const { weekday, day: dayNum } = dayChipLabel(day);
+              return (
+                <li key={day}>
+                  <button
+                    type="button"
+                    onClick={() => jumpToDay(day)}
+                    className={clsx(
+                      "flex min-w-[52px] flex-col items-center rounded-2xl border px-2.5 py-2 transition",
+                      isActive
+                        ? "border-slate-900 bg-slate-900 text-white shadow-md"
+                        : isToday
+                        ? "border-rose-200 bg-rose-50 text-rose-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    <span className="text-[9px] font-semibold tracking-widest">
+                      {weekday}
+                    </span>
+                    <span className="text-base font-bold leading-tight">
+                      {dayNum}
+                    </span>
+                    {isToday && !isActive && (
+                      <span className="text-[8px] font-semibold uppercase tracking-widest">
+                        Today
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
@@ -85,7 +146,13 @@ export function ItineraryPanel({
 
       <div className="mt-5 space-y-6">
         {days.map(({ day, list }) => (
-          <section key={day}>
+          <section
+            key={day}
+            ref={(el) => {
+              dayRefs.current[day] = el;
+            }}
+            className="scroll-mt-3"
+          >
             <div className="flex items-baseline justify-between">
               <div className="flex items-baseline gap-2">
                 <div className="text-sm font-semibold text-slate-900">
