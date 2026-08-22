@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { Search, Trash2 } from "lucide-react";
 import { BOOKING_STYLE } from "@/lib/booking-style";
@@ -30,9 +30,7 @@ export function ItineraryPanel({
   onRemove: (id: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const today = todayDayKey();
-  const dayRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const days = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -68,11 +66,22 @@ export function ItineraryPanel({
       .sort((a, b) => a.day.localeCompare(b.day));
   }, [bookings, query]);
 
-  function jumpToDay(day: string) {
-    setSelectedDay(day);
-    const el = dayRefs.current[day];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+  const dayKeys = days.map((d) => d.day);
+  const initialDay = dayKeys.includes(today) ? today : dayKeys[0] ?? null;
+  const [selectedDay, setSelectedDay] = useState<string | "all" | null>(
+    initialDay
+  );
+
+  useEffect(() => {
+    if (selectedDay === "all") return;
+    if (selectedDay && dayKeys.includes(selectedDay)) return;
+    setSelectedDay(initialDay);
+  }, [dayKeys.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const visibleDays =
+    selectedDay === "all" || selectedDay === null
+      ? days
+      : days.filter((d) => d.day === selectedDay);
 
   if (bookings.length === 0) {
     return (
@@ -84,24 +93,44 @@ export function ItineraryPanel({
     );
   }
 
-  const activeChip = selectedDay ?? (days.some((d) => d.day === today) ? today : days[0]?.day);
-
   return (
     <div className="px-5 py-5">
       {days.length > 1 && (
         <div className="no-scrollbar -mx-5 mb-3 overflow-x-auto px-5">
           <ul className="flex gap-2 pb-1">
+            <li>
+              <button
+                type="button"
+                onClick={() => setSelectedDay("all")}
+                className={clsx(
+                  "flex h-[62px] min-w-[52px] flex-col items-center justify-center rounded-2xl border px-3 transition",
+                  selectedDay === "all"
+                    ? "border-slate-900 bg-slate-900 text-white shadow-md"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                <span className="text-[9px] font-semibold tracking-widest">
+                  ALL
+                </span>
+                <span className="text-base font-bold leading-tight">
+                  {days.length}
+                </span>
+                <span className="text-[8px] font-semibold uppercase tracking-widest text-slate-400">
+                  days
+                </span>
+              </button>
+            </li>
             {days.map(({ day }) => {
-              const isActive = day === activeChip;
+              const isActive = day === selectedDay;
               const isToday = day === today;
               const { weekday, day: dayNum } = dayChipLabel(day);
               return (
                 <li key={day}>
                   <button
                     type="button"
-                    onClick={() => jumpToDay(day)}
+                    onClick={() => setSelectedDay(day)}
                     className={clsx(
-                      "flex min-w-[52px] flex-col items-center rounded-2xl border px-2.5 py-2 transition",
+                      "flex h-[62px] min-w-[52px] flex-col items-center justify-center rounded-2xl border px-2.5 transition",
                       isActive
                         ? "border-slate-900 bg-slate-900 text-white shadow-md"
                         : isToday
@@ -138,21 +167,15 @@ export function ItineraryPanel({
         />
       </div>
 
-      {days.length === 0 && (
+      {visibleDays.length === 0 && (
         <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
-          Nothing matches. Clear your search or add a booking.
+          Nothing on this day. Pick another day or clear your search.
         </div>
       )}
 
       <div className="mt-5 space-y-6">
-        {days.map(({ day, list }) => (
-          <section
-            key={day}
-            ref={(el) => {
-              dayRefs.current[day] = el;
-            }}
-            className="scroll-mt-3"
-          >
+        {visibleDays.map(({ day, list }) => (
+          <section key={day}>
             <div className="flex items-baseline justify-between">
               <div className="flex items-baseline gap-2">
                 <div className="text-sm font-semibold text-slate-900">
