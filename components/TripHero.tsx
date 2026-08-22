@@ -54,7 +54,7 @@ export function TripHero({
 
       <div className="relative flex items-start justify-between">
         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/80">
-          <Sparkles className="h-3.5 w-3.5" /> Trip Brain
+          <Sparkles className="h-3.5 w-3.5" /> Tripster
         </div>
         <button
           type="button"

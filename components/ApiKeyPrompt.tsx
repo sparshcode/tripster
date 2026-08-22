@@ -38,7 +38,7 @@ export function ApiKeyPrompt({
             Enter your Anthropic API key
           </h3>
           <p className="mt-1 text-xs leading-5 text-white/85">
-            Kept in this browser tab only. Sent over HTTPS to Claude. Never stored by Trip Brain.
+            Kept in this browser tab only. Sent over HTTPS to Claude. Never stored by Tripster.
           </p>
         </div>
         <div className="p-6">

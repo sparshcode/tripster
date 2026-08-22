@@ -29,7 +29,7 @@ export function EmptyState({
         🧠
       </div>
       <div className="mt-6 inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-indigo-600">
-        <Sparkles className="h-3 w-3" /> Trip Brain
+        <Sparkles className="h-3 w-3" /> Tripster
       </div>
       <h2 className="mt-3 text-2xl font-bold leading-tight text-slate-900">
         Your trip, in one brain.

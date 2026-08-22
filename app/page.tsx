@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AddToTrip } from "@/components/AddToTrip";
 import { ApiKeyPrompt } from "@/components/ApiKeyPrompt";
-import { AskTripBrain, type ChatTurn } from "@/components/AskTripBrain";
+import { AskTripster, type ChatTurn } from "@/components/AskTripster";
 import { BottomNav, type Tab } from "@/components/BottomNav";
 import { EmptyState } from "@/components/EmptyState";
 import { ItineraryPanel } from "@/components/ItineraryPanel";
@@ -168,7 +168,7 @@ export default function Home() {
               />
             )}
             {tab === "ask" && (
-              <AskTripBrain
+              <AskTripster
                 turns={chat}
                 busy={busy}
                 onAsk={async (question) => {

@@ -53,7 +53,7 @@ export function OverviewPanel({
             Add your first booking
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            Drop in a PDF, screenshot, or pasted email and Trip Brain will fill in
+            Drop in a PDF, screenshot, or pasted email and Tripster will fill in
             the rest.
           </p>
           <button

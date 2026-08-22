@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Trip Brain",
+  title: "Tripster",
   description:
     "One context-aware travel assistant that knows what you've booked, planned, and still need to do.",
 };

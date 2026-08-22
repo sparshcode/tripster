@@ -13,7 +13,7 @@ const SUGGESTIONS = [
   "How much free time on Oct 13?",
 ];
 
-export function AskTripBrain({
+export function AskTripster({
   turns,
   onAsk,
   busy,
@@ -45,7 +45,7 @@ export function AskTripBrain({
           <Sparkles className="h-4 w-4" />
         </div>
         <div>
-          <div className="text-sm font-semibold text-slate-900">Ask Trip Brain</div>
+          <div className="text-sm font-semibold text-slate-900">Ask Tripster</div>
           <div className="text-[11px] text-slate-500">
             Answers only from bookings you&apos;ve added.
           </div>
