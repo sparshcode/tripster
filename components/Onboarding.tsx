@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { Apple, Eye, EyeOff, Loader2, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { TripsterLogo } from "./TripsterLogo";
 import type { AuthMethod } from "@/lib/auth-store";
 
@@ -14,29 +14,51 @@ export function Onboarding({
   onSignIn: (info: { method: AuthMethod; email?: string }) => void;
 }) {
   const [mode, setMode] = useState<Mode>("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [busy, setBusy] = useState<AuthMethod | null>(null);
+
+  const passwordOk = password.length >= 6;
+  const emailOk = /.+@.+\..+/.test(email);
+  const canSignIn = emailOk && passwordOk;
+  const canSignUp =
+    name.trim().length > 1 &&
+    emailOk &&
+    passwordOk &&
+    password === confirmPassword &&
+    agreeTerms;
 
   async function submit(method: AuthMethod) {
     if (busy) return;
+    if (method === "password" && mode === "signup" && !canSignUp) return;
+    if (method === "password" && mode === "signin" && !canSignIn) return;
     setBusy(method);
     await new Promise((r) => setTimeout(r, 350));
     onSignIn({ method, email: email.trim() || undefined });
   }
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-y-auto bg-white px-6 pb-8 pt-16">
+    <div className="relative flex flex-1 flex-col overflow-y-auto bg-white px-6 pb-8 pt-14">
       <div className="flex flex-col items-center">
-        <TripsterLogo size={68} className="drop-shadow-lg" />
+        <TripsterLogo size={64} className="drop-shadow-lg" />
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
-          Tripster <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-rose-500">AI</span>
+          Tripster{" "}
+          <span className="bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-rose-500 bg-clip-text text-transparent">
+            AI
+          </span>
         </h1>
-        <p className="mt-1 text-xs text-slate-500">One brain for your whole trip</p>
+        <p className="mt-1 text-xs text-slate-500">
+          {mode === "signin"
+            ? "Welcome back. Sign in to your trips."
+            : "Create an account to start planning."}
+        </p>
       </div>
 
-      <div className="mx-auto mt-8 grid w-full max-w-xs grid-cols-2 gap-1 rounded-full bg-slate-100 p-1">
+      <div className="mx-auto mt-6 grid w-full max-w-xs grid-cols-2 gap-1 rounded-full bg-slate-100 p-1">
         {(["signin", "signup"] as Mode[]).map((m) => (
           <button
             key={m}
@@ -59,8 +81,25 @@ export function Onboarding({
           e.preventDefault();
           submit("password");
         }}
-        className="mx-auto mt-6 w-full max-w-xs space-y-3"
+        className="mx-auto mt-5 w-full max-w-xs space-y-3"
       >
+        {mode === "signup" && (
+          <div>
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500" htmlFor="name">
+              Full Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Riya Sharma"
+              autoComplete="name"
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500"
+            />
+          </div>
+        )}
+
         <div>
           <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500" htmlFor="email">
             Email Address
@@ -86,7 +125,7 @@ export function Onboarding({
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={mode === "signup" ? "At least 6 characters" : "••••••••"}
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
               className="w-full bg-transparent text-sm outline-none"
             />
@@ -101,7 +140,27 @@ export function Onboarding({
           </div>
         </div>
 
-        {mode === "signin" && (
+        {mode === "signup" && (
+          <div>
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500" htmlFor="confirm">
+              Confirm Password
+            </label>
+            <input
+              id="confirm"
+              type={showPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-enter password"
+              autoComplete="new-password"
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-indigo-500"
+            />
+            {confirmPassword && password !== confirmPassword && (
+              <p className="mt-1 text-[11px] text-rose-600">Passwords don&apos;t match.</p>
+            )}
+          </div>
+        )}
+
+        {mode === "signin" ? (
           <div className="text-right">
             <button
               type="button"
@@ -110,25 +169,30 @@ export function Onboarding({
               Forgot password?
             </button>
           </div>
+        ) : (
+          <label className="flex items-start gap-2 text-[11px] leading-5 text-slate-600">
+            <input
+              type="checkbox"
+              checked={agreeTerms}
+              onChange={(e) => setAgreeTerms(e.target.checked)}
+              className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 accent-indigo-600"
+            />
+            <span>
+              I agree to Tripster&apos;s{" "}
+              <a className="font-semibold text-indigo-600 hover:text-indigo-700">Terms</a>{" "}
+              and{" "}
+              <a className="font-semibold text-indigo-600 hover:text-indigo-700">Privacy Policy</a>.
+            </span>
+          </label>
         )}
 
         <button
           type="submit"
-          disabled={busy !== null}
+          disabled={busy !== null || (mode === "signin" ? !canSignIn : !canSignUp)}
           className="flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy === "password" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {busy === "password" && <Loader2 className="h-4 w-4 animate-spin" />}
           {mode === "signin" ? "Sign In" : "Create Account"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => submit("magic")}
-          disabled={busy !== null}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {busy === "magic" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-          Email me a login link
         </button>
 
         <div className="flex items-center gap-3 pt-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
@@ -146,19 +210,35 @@ export function Onboarding({
           {busy === "google" ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleGlyph className="h-4 w-4" />}
           Continue with Google
         </button>
-
-        <button
-          type="button"
-          onClick={() => submit("apple")}
-          disabled={busy !== null}
-          className="flex w-full items-center justify-center gap-3 rounded-full bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {busy === "apple" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Apple className="h-4 w-4" />}
-          Continue with Apple
-        </button>
       </form>
 
-      <p className="mx-auto mt-6 max-w-xs text-center text-[10px] leading-4 text-slate-400">
+      <p className="mx-auto mt-5 max-w-xs text-center text-xs text-slate-500">
+        {mode === "signin" ? (
+          <>
+            New to Tripster?{" "}
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className="font-semibold text-indigo-600 hover:text-indigo-700"
+            >
+              Create an account
+            </button>
+          </>
+        ) : (
+          <>
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className="font-semibold text-indigo-600 hover:text-indigo-700"
+            >
+              Sign in
+            </button>
+          </>
+        )}
+      </p>
+
+      <p className="mx-auto mt-4 max-w-xs text-center text-[10px] leading-4 text-slate-400">
         Demo build — auth is client-side only. Your data stays on this device.
       </p>
     </div>
