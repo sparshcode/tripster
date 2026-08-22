@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import clsx from "clsx";
+import Image from "next/image";
 import {
   LogOut,
   MapPin,
@@ -291,11 +292,13 @@ function ActiveCard({
         onClick={() => onOpen(trip.id)}
         className="block w-full text-left"
       >
-        <div className="relative aspect-[4/3] w-full bg-slate-200">
-          <img
+        <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-rose-500">
+          <Image
             src={photo}
             alt={name}
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            sizes="380px"
+            className="object-cover"
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -346,14 +349,13 @@ function MiniCard({
         onClick={() => onOpen(trip.id)}
         className="block w-full text-left"
       >
-        <div className="relative aspect-square w-full bg-slate-200">
-          <img
+        <div className="relative aspect-square w-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-rose-500">
+          <Image
             src={photo}
             alt={name}
-            className={clsx(
-              "absolute inset-0 h-full w-full object-cover",
-              muted && "grayscale-[15%]"
-            )}
+            fill
+            sizes="180px"
+            className={clsx("object-cover", muted && "grayscale-[15%]")}
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
