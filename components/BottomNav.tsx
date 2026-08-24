@@ -1,14 +1,15 @@
 "use client";
 
 import clsx from "clsx";
-import { LayoutGrid, List, Sparkles, Plus, type LucideIcon } from "lucide-react";
+import { LayoutGrid, List, Plus, type LucideIcon } from "lucide-react";
+import { TripsterLogo } from "./TripsterLogo";
 
 export type Tab = "overview" | "itinerary" | "ask" | "add";
 
-const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
+const TABS: { id: Tab; label: string; Icon?: LucideIcon }[] = [
   { id: "overview", label: "Overview", Icon: LayoutGrid },
   { id: "itinerary", label: "Itinerary", Icon: List },
-  { id: "ask", label: "Ask", Icon: Sparkles },
+  { id: "ask", label: "Ask" },
   { id: "add", label: "Add", Icon: Plus },
 ];
 
@@ -36,12 +37,16 @@ export function BottomNav({
                     : "text-slate-500 hover:bg-slate-100"
                 )}
               >
-                <Icon
-                  className={clsx(
-                    "h-4 w-4",
-                    active ? "text-white" : "text-slate-500"
-                  )}
-                />
+                {id === "ask" ? (
+                  <TripsterLogo size={18} className="rounded" />
+                ) : Icon ? (
+                  <Icon
+                    className={clsx(
+                      "h-4 w-4",
+                      active ? "text-white" : "text-slate-500"
+                    )}
+                  />
+                ) : null}
                 {label}
               </button>
             </li>

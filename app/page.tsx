@@ -305,7 +305,11 @@ export default function Home() {
               handleDeleteTrip(activeTrip.id);
             }}
           />
-          <div className="no-scrollbar flex-1 overflow-y-auto">
+          <div
+            className={`no-scrollbar min-h-0 flex-1 ${
+              tab === "ask" ? "overflow-hidden" : "overflow-y-auto"
+            }`}
+          >
             {tab === "overview" && (
               <OverviewPanel
                 trip={activeTrip}
