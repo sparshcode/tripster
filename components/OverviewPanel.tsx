@@ -249,7 +249,7 @@ function NearbySuggestions({
             <div className="text-sm font-semibold">
               {busy
                 ? "Finding places that fit..."
-                : "Discover places that fit your trip and itinerary"}
+                : "Discover places that fit your trip vibe and itinerary"}
             </div>
             <div className="mt-0.5 text-xs text-white/75">
               Personalized around your plans and hotel

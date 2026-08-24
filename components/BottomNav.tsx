@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { LayoutGrid, List, Plus, type LucideIcon } from "lucide-react";
-import { TripsterLogo } from "./TripsterLogo";
+import { TripsterMark } from "./TripsterLogo";
 
 export type Tab = "overview" | "itinerary" | "ask" | "add";
 
@@ -38,7 +38,12 @@ export function BottomNav({
                 )}
               >
                 {id === "ask" ? (
-                  <TripsterLogo size={18} className="rounded" />
+                  <TripsterMark
+                    className={clsx(
+                      "h-4 w-4",
+                      active ? "text-white" : "text-slate-500"
+                    )}
+                  />
                 ) : Icon ? (
                   <Icon
                     className={clsx(
