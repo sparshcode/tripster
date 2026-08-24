@@ -17,6 +17,7 @@ import type { Booking, Trip } from "@/lib/trip-types";
 import type { Conflict, Gap } from "@/lib/conflicts";
 import { wallTime, wallDayDate } from "@/lib/format";
 import { ConflictsPanel } from "./ConflictsPanel";
+import { TripsterLogo } from "./TripsterLogo";
 
 export type NearbySuggestion = {
   name: string;
@@ -241,15 +242,17 @@ function NearbySuggestions({
             {busy ? (
               <LoaderCircle className="h-5 w-5 animate-spin" />
             ) : (
-              <Sparkles className="h-5 w-5" />
+              <TripsterLogo size={34} className="rounded-lg" />
             )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold">
-              {busy ? "Finding local picks..." : "Discover places nearby"}
+              {busy
+                ? "Finding places that fit..."
+                : "Discover places that fit your trip and itinerary"}
             </div>
             <div className="mt-0.5 text-xs text-white/75">
-              AI ideas for food, coffee, and things to do
+              Personalized around your plans and hotel
             </div>
           </div>
           {!busy && <Compass className="h-5 w-5 shrink-0" />}

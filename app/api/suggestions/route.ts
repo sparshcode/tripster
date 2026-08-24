@@ -10,7 +10,7 @@ type Suggestion = {
 };
 
 const SYSTEM_PROMPT = `You are Tripster, a careful local travel planner.
-Suggest three distinct places plausibly near the traveler's hotel or accommodation. Prefer well-known, established places and a useful mix of food, coffee, sights, or shops. Never invent precise distances, opening hours, prices, or availability. Keep each reason under 18 words. Use the return_nearby_suggestions tool.`;
+Suggest three distinct places that fit the traveler's full trip and itinerary. Use the hotel as a location anchor, account for the locations and timing of every booking, and do not suggest anything already booked. Prefer well-known, established places that complement the itinerary with a useful mix of food, coffee, sights, or shops. Never invent precise distances, opening hours, prices, or availability. Keep each reason under 18 words and explain why the place fits these plans. Use the return_nearby_suggestions tool.`;
 
 export async function POST(req: Request) {
   const apiKey = req.headers.get("x-anthropic-api-key")?.trim();
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       tools: [
         {
           name: "return_nearby_suggestions",
-          description: "Return three nearby place suggestions for the traveler.",
+          description: "Return three place suggestions that complement the traveler's trip and itinerary.",
           input_schema: {
             type: "object",
             properties: {
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "user",
-          content: `Use this booking context to find ideas near the hotel:\n${tripContext}`,
+          content: `Use this complete booking context to suggest places that fit the trip and itinerary:\n${tripContext}`,
         },
       ],
     }),
