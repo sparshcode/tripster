@@ -45,6 +45,15 @@ export const DEMO_TRIPS: Trip[] = [
         location: "Shibuya, Tokyo",
         createdAt: "2026-08-20T10:00:00Z",
       },
+      {
+        id: "tokyo-shibuya-sky",
+        type: "activity",
+        title: "Shibuya Sky",
+        startDatetime: "2026-08-24T20:00:00+09:00",
+        endDatetime: "2026-08-24T21:00:00+09:00",
+        location: "Shibuya Scramble Square, Tokyo",
+        createdAt: "2026-08-20T10:00:00Z",
+      },
     ],
   },
   {

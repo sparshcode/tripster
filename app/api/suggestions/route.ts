@@ -7,6 +7,15 @@ type Suggestion = {
   category: "food" | "coffee" | "sight" | "shop" | "other";
   area: string;
   reason: string;
+  durationMinutes: number;
+};
+
+type SlotContext = {
+  from: string;
+  to: string;
+  durationMinutes: number;
+  previousTitle: string;
+  nextTitle: string;
 };
 
 const SYSTEM_PROMPT = `You are Tripster, a careful local travel planner.
@@ -21,7 +30,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { tripContext?: string };
+  let body: { tripContext?: string; slot?: SlotContext };
   try {
     body = await req.json();
   } catch {
@@ -32,6 +41,7 @@ export async function POST(req: Request) {
   if (!tripContext) {
     return NextResponse.json({ error: "Missing trip context." }, { status: 400 });
   }
+  const slot = body.slot;
 
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5";
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -66,8 +76,19 @@ export async function POST(req: Request) {
                     },
                     area: { type: "string" },
                     reason: { type: "string" },
+                    durationMinutes: {
+                      type: "integer",
+                      minimum: 30,
+                      maximum: 180,
+                    },
                   },
-                  required: ["name", "category", "area", "reason"],
+                  required: [
+                    "name",
+                    "category",
+                    "area",
+                    "reason",
+                    "durationMinutes",
+                  ],
                   additionalProperties: false,
                 },
               },
@@ -81,7 +102,9 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "user",
-          content: `Use this complete booking context to suggest places that fit the trip and itinerary:\n${tripContext}`,
+          content: slot
+            ? `Use this complete booking context to suggest places for one open itinerary slot.\n${tripContext}\n\nOpen slot: ${slot.from} to ${slot.to} (${slot.durationMinutes} minutes), after ${slot.previousTitle}, before ${slot.nextTitle}. Every suggestion must fit comfortably inside this window and help the traveler reach the next plan on time.`
+            : `Use this complete booking context to suggest places that fit the trip and itinerary:\n${tripContext}`,
         },
       ],
     }),

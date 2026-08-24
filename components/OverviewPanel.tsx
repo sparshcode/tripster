@@ -13,18 +13,13 @@ import {
   Utensils,
 } from "lucide-react";
 import { BOOKING_STYLE } from "@/lib/booking-style";
-import type { Booking, Trip } from "@/lib/trip-types";
+import type { Booking, PlaceSuggestion, Trip } from "@/lib/trip-types";
 import type { Conflict, Gap } from "@/lib/conflicts";
 import { wallTime, wallDayDate } from "@/lib/format";
 import { ConflictsPanel } from "./ConflictsPanel";
 import { TripsterLogo } from "./TripsterLogo";
 
-export type NearbySuggestion = {
-  name: string;
-  category: "food" | "coffee" | "sight" | "shop" | "other";
-  area: string;
-  reason: string;
-};
+export type NearbySuggestion = PlaceSuggestion;
 
 function nextUpcoming(bookings: Booking[]): Booking | null {
   const now = Date.now();

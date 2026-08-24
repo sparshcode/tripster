@@ -6,7 +6,10 @@ import { ApiKeyPrompt } from "@/components/ApiKeyPrompt";
 import { AskTripster, type ChatTurn } from "@/components/AskTripster";
 import { BottomNav, type Tab } from "@/components/BottomNav";
 import { CreateTripPage } from "@/components/CreateTripPage";
-import { ItineraryPanel } from "@/components/ItineraryPanel";
+import {
+  ItineraryPanel,
+  type OpenSlot,
+} from "@/components/ItineraryPanel";
 import { Onboarding } from "@/components/Onboarding";
 import {
   OverviewPanel,
@@ -24,13 +27,19 @@ import {
 } from "@/lib/auth-store";
 import { findConflicts, findGaps } from "@/lib/conflicts";
 import { loadTrips, newTrip, saveTrips } from "@/lib/trip-store";
-import type { Booking, ExtractPayload, Trip } from "@/lib/trip-types";
+import type {
+  Booking,
+  ExtractPayload,
+  PlaceSuggestion,
+  Trip,
+} from "@/lib/trip-types";
 
 type PendingAction =
   | { kind: "extract"; payload: ExtractPayload }
   | { kind: "extractBatch"; payloads: ExtractPayload[] }
   | { kind: "ask"; question: string }
   | { kind: "suggestions" }
+  | { kind: "slotSuggestions"; slot: OpenSlot }
   | null;
 
 export default function Home() {
@@ -47,6 +56,11 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<Record<string, NearbySuggestion[]>>({});
   const [suggestionsBusy, setSuggestionsBusy] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+  const [slotSuggestions, setSlotSuggestions] = useState<
+    Record<string, PlaceSuggestion[]>
+  >({});
+  const [slotBusyId, setSlotBusyId] = useState<string | null>(null);
+  const [slotErrors, setSlotErrors] = useState<Record<string, string>>({});
   const [tab, setTab] = useState<Tab>("overview");
 
   useEffect(() => {
@@ -208,6 +222,74 @@ export default function Home() {
     }
   }
 
+  async function runSlotSuggestions(key: string, slot: OpenSlot) {
+    if (!activeTrip) return;
+    setSlotBusyId(slot.id);
+    setSlotErrors((prev) => ({ ...prev, [slot.id]: "" }));
+    try {
+      const res = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Anthropic-API-Key": key,
+        },
+        body: JSON.stringify({ tripContext, slot }),
+      });
+      const data = (await res.json()) as {
+        suggestions?: PlaceSuggestion[];
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setSlotSuggestions((prev) => ({
+        ...prev,
+        [slot.id]: data.suggestions ?? [],
+      }));
+    } catch (error) {
+      setSlotErrors((prev) => ({
+        ...prev,
+        [slot.id]:
+          error instanceof Error ? error.message : "Could not load ideas.",
+      }));
+    } finally {
+      setSlotBusyId(null);
+    }
+  }
+
+  function addSlotSuggestion(slot: OpenSlot, suggestion: PlaceSuggestion) {
+    const travelBuffer = slot.durationMinutes >= 120 ? 30 : 15;
+    const availableMinutes = Math.max(
+      30,
+      slot.durationMinutes - travelBuffer * 2
+    );
+    const duration = Math.min(
+      suggestion.durationMinutes ?? 60,
+      availableMinutes
+    );
+    const startDatetime = addWallMinutes(slot.from, travelBuffer);
+    const booking: Booking = {
+      id: crypto.randomUUID(),
+      type:
+        suggestion.category === "food" || suggestion.category === "coffee"
+          ? "restaurant"
+          : "activity",
+      title: suggestion.name,
+      startDatetime,
+      endDatetime: addWallMinutes(startDatetime, duration),
+      location: suggestion.area,
+      notes: `Suggested by Tripster AI: ${suggestion.reason}`,
+      createdAt: new Date().toISOString(),
+    };
+    updateActiveTrip((trip) => ({
+      ...trip,
+      bookings: [...trip.bookings, booking],
+    }));
+    setSlotSuggestions((prev) => {
+      const next = { ...prev };
+      delete next[slot.id];
+      return next;
+    });
+  }
+
   async function handleKey(key: string) {
     setApiKey(key);
     const p = pending;
@@ -217,6 +299,7 @@ export default function Home() {
     if (p.kind === "extractBatch") await runExtractBatch(key, p.payloads);
     if (p.kind === "ask") await runAsk(key, p.question);
     if (p.kind === "suggestions") await runSuggestions(key);
+    if (p.kind === "slotSuggestions") await runSlotSuggestions(key, p.slot);
   }
 
   function handleSignIn(info: { method: AuthMethod; email?: string }) {
@@ -328,6 +411,14 @@ export default function Home() {
             {tab === "itinerary" && (
               <ItineraryPanel
                 bookings={activeTrip.bookings}
+                slotSuggestions={slotSuggestions}
+                slotBusyId={slotBusyId}
+                slotErrors={slotErrors}
+                onSuggestSlot={(slot) => {
+                  const key = ensureKey({ kind: "slotSuggestions", slot });
+                  if (key) void runSlotSuggestions(key, slot);
+                }}
+                onAddSuggestion={addSlotSuggestion}
                 onRemove={(id) =>
                   updateActiveTrip((t) => ({
                     ...t,
@@ -366,6 +457,25 @@ export default function Home() {
       />
     </PhoneFrame>
   );
+}
+
+function addWallMinutes(iso: string, minutes: number): string {
+  const match = iso.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(.*)$/
+  );
+  if (!match) return iso;
+  const date = new Date(
+    Date.UTC(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      Number(match[4]),
+      Number(match[5]),
+      Number(match[6] ?? 0)
+    ) +
+      minutes * 60_000
+  );
+  return `${date.toISOString().slice(0, 19)}${match[7]}`;
 }
 
 function buildTripContext(trip: Trip | null): string {

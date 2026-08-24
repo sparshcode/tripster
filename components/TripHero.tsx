@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import type { Trip } from "@/lib/trip-types";
 import { formatDateRange } from "@/lib/format";
+import { TripsterMark } from "./TripsterLogo";
 
 function tripDateRangeLabel(trip: Trip): string {
   const dates = trip.bookings
@@ -39,7 +40,7 @@ export function TripHero({
         </button>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-white">
-            <Sparkles className="h-3 w-3" /> Tripster
+            <TripsterMark className="h-3.5 w-3.5 text-white" /> Tripster
           </div>
           <button
             type="button"

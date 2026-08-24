@@ -32,6 +32,14 @@ export type Trip = {
   bookings: Booking[];
 };
 
+export type PlaceSuggestion = {
+  name: string;
+  category: "food" | "coffee" | "sight" | "shop" | "other";
+  area: string;
+  reason: string;
+  durationMinutes?: number;
+};
+
 export type ExtractPayload = {
   text?: string;
   images?: { mediaType: string; base64: string }[];
