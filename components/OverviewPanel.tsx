@@ -1,11 +1,29 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, Clock, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  Clock,
+  Coffee,
+  Compass,
+  LoaderCircle,
+  MapPin,
+  RefreshCw,
+  Sparkles,
+  Utensils,
+} from "lucide-react";
 import { BOOKING_STYLE } from "@/lib/booking-style";
 import type { Booking, Trip } from "@/lib/trip-types";
 import type { Conflict, Gap } from "@/lib/conflicts";
 import { wallTime, wallDayDate } from "@/lib/format";
 import { ConflictsPanel } from "./ConflictsPanel";
+
+export type NearbySuggestion = {
+  name: string;
+  category: "food" | "coffee" | "sight" | "shop" | "other";
+  area: string;
+  reason: string;
+};
 
 function nextUpcoming(bookings: Booking[]): Booking | null {
   const now = Date.now();
@@ -31,11 +49,19 @@ export function OverviewPanel({
   conflicts,
   gaps,
   onGoAdd,
+  suggestions,
+  suggestionsBusy,
+  suggestionsError,
+  onGetSuggestions,
 }: {
   trip: Trip;
   conflicts: Conflict[];
   gaps: Gap[];
   onGoAdd: () => void;
+  suggestions: NearbySuggestion[];
+  suggestionsBusy: boolean;
+  suggestionsError: string | null;
+  onGetSuggestions: () => void;
 }) {
   const total = trip.bookings.length;
   const alerts = conflicts.length + gaps.length;
@@ -91,6 +117,14 @@ export function OverviewPanel({
 
       {upcoming && <UpNext booking={upcoming} />}
 
+      <NearbySuggestions
+        trip={trip}
+        suggestions={suggestions}
+        busy={suggestionsBusy}
+        error={suggestionsError}
+        onGetSuggestions={onGetSuggestions}
+      />
+
       {(conflicts.length > 0 || gaps.length > 0) && (
         <div>
           <SectionLabel>Needs your attention</SectionLabel>
@@ -130,6 +164,144 @@ export function OverviewPanel({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function NearbySuggestions({
+  trip,
+  suggestions,
+  busy,
+  error,
+  onGetSuggestions,
+}: {
+  trip: Trip;
+  suggestions: NearbySuggestion[];
+  busy: boolean;
+  error: string | null;
+  onGetSuggestions: () => void;
+}) {
+  const hotel = trip.bookings.find(
+    (booking) => booking.type === "hotel" && (booking.address || booking.location)
+  );
+  const hotelArea = hotel?.address ?? hotel?.location;
+
+  if (!hotel || !hotelArea) {
+    return (
+      <div>
+        <SectionLabel>Near your stay</SectionLabel>
+        <div className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white p-4">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-indigo-50 text-indigo-600">
+            <MapPin className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-slate-900">
+              Add your hotel to get local ideas
+            </div>
+            <div className="mt-0.5 text-xs text-slate-500">
+              Tripster uses its location as the starting point.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <section>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <SectionLabel>Near your stay</SectionLabel>
+          <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">Around {hotel.title}</span>
+          </div>
+        </div>
+        {suggestions.length > 0 && (
+          <button
+            type="button"
+            onClick={onGetSuggestions}
+            disabled={busy}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm disabled:opacity-50"
+            aria-label="Refresh nearby suggestions"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} />
+          </button>
+        )}
+      </div>
+
+      {suggestions.length === 0 ? (
+        <button
+          type="button"
+          onClick={onGetSuggestions}
+          disabled={busy}
+          className="mt-2 flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 p-4 text-left text-white shadow-sm disabled:opacity-70"
+        >
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
+            {busy ? (
+              <LoaderCircle className="h-5 w-5 animate-spin" />
+            ) : (
+              <Sparkles className="h-5 w-5" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold">
+              {busy ? "Finding local picks..." : "Discover places nearby"}
+            </div>
+            <div className="mt-0.5 text-xs text-white/75">
+              AI ideas for food, coffee, and things to do
+            </div>
+          </div>
+          {!busy && <Compass className="h-5 w-5 shrink-0" />}
+        </button>
+      ) : (
+        <div className="mt-2 space-y-2">
+          {suggestions.map((suggestion) => (
+            <SuggestionCard
+              key={`${suggestion.name}-${suggestion.category}`}
+              suggestion={suggestion}
+            />
+          ))}
+          <p className="px-1 text-[10px] leading-4 text-slate-400">
+            AI suggestions are not live listings. Verify distance, hours, and availability.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-2 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          {error}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SuggestionCard({ suggestion }: { suggestion: NearbySuggestion }) {
+  const Icon =
+    suggestion.category === "food"
+      ? Utensils
+      : suggestion.category === "coffee"
+      ? Coffee
+      : Compass;
+
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="truncate text-sm font-semibold text-slate-900">
+            {suggestion.name}
+          </div>
+          <div className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-semibold uppercase text-indigo-600">
+            AI pick
+          </div>
+        </div>
+        <div className="mt-0.5 text-[11px] text-slate-500">{suggestion.area}</div>
+        <div className="mt-1 text-xs leading-4 text-slate-600">{suggestion.reason}</div>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,10 @@ import { BottomNav, type Tab } from "@/components/BottomNav";
 import { CreateTripPage } from "@/components/CreateTripPage";
 import { ItineraryPanel } from "@/components/ItineraryPanel";
 import { Onboarding } from "@/components/Onboarding";
-import { OverviewPanel } from "@/components/OverviewPanel";
+import {
+  OverviewPanel,
+  type NearbySuggestion,
+} from "@/components/OverviewPanel";
 import { PhoneFrame } from "@/components/PhoneFrame";
 import { TripHero } from "@/components/TripHero";
 import { TripsHome } from "@/components/TripsHome";
@@ -27,6 +30,7 @@ type PendingAction =
   | { kind: "extract"; payload: ExtractPayload }
   | { kind: "extractBatch"; payloads: ExtractPayload[] }
   | { kind: "ask"; question: string }
+  | { kind: "suggestions" }
   | null;
 
 export default function Home() {
@@ -40,6 +44,9 @@ export default function Home() {
   const [pending, setPending] = useState<PendingAction>(null);
   const [chat, setChat] = useState<ChatTurn[]>([]);
   const [busy, setBusy] = useState(false);
+  const [suggestions, setSuggestions] = useState<Record<string, NearbySuggestion[]>>({});
+  const [suggestionsBusy, setSuggestionsBusy] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
 
   useEffect(() => {
@@ -170,6 +177,37 @@ export default function Home() {
     }
   }
 
+  async function runSuggestions(key: string) {
+    if (!activeTrip) return;
+    setSuggestionsBusy(true);
+    setSuggestionsError(null);
+    try {
+      const res = await fetch("/api/suggestions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Anthropic-API-Key": key,
+        },
+        body: JSON.stringify({ tripContext }),
+      });
+      const data = (await res.json()) as {
+        suggestions?: NearbySuggestion[];
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setSuggestions((prev) => ({
+        ...prev,
+        [activeTrip.id]: data.suggestions ?? [],
+      }));
+    } catch (error) {
+      setSuggestionsError(
+        error instanceof Error ? error.message : "Could not load suggestions."
+      );
+    } finally {
+      setSuggestionsBusy(false);
+    }
+  }
+
   async function handleKey(key: string) {
     setApiKey(key);
     const p = pending;
@@ -178,6 +216,7 @@ export default function Home() {
     if (p.kind === "extract") await runExtract(key, p.payload);
     if (p.kind === "extractBatch") await runExtractBatch(key, p.payloads);
     if (p.kind === "ask") await runAsk(key, p.question);
+    if (p.kind === "suggestions") await runSuggestions(key);
   }
 
   function handleSignIn(info: { method: AuthMethod; email?: string }) {
@@ -273,6 +312,13 @@ export default function Home() {
                 conflicts={conflicts}
                 gaps={gaps}
                 onGoAdd={() => setTab("add")}
+                suggestions={suggestions[activeTrip.id] ?? []}
+                suggestionsBusy={suggestionsBusy}
+                suggestionsError={suggestionsError}
+                onGetSuggestions={() => {
+                  const key = ensureKey({ kind: "suggestions" });
+                  if (key) void runSuggestions(key);
+                }}
               />
             )}
             {tab === "itinerary" && (
